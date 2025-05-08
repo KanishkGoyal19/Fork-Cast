@@ -39,7 +39,8 @@ export default function Main() {
     }
 
     return (
-        <main className="p-6 bg-gray-100 min-h-screen">
+        <main className="p-6 min-h-screen"
+        >
             <form
                 action={addIngredients}
                 className="flex flex-col md:flex-row items-center justify-center gap-4 bg-white shadow-md rounded-lg p-4 md:p-6 max-w-2xl mx-auto mb-6"
