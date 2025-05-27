@@ -16,6 +16,7 @@ export default function Main() {
         exclude: false,
         excludedIngredients: ""
     });
+    const [error, setError] = React.useState("");
 
     const recipeSection = React.useRef(null);
     React.useEffect(() => {
@@ -35,6 +36,12 @@ export default function Main() {
     }
     function addIngredients(formData) {
         const newIngredient = formData.get("Ingredient");
+        const isValid = /^[A-Za-z\s]+$/.test(newIngredient);
+        if (!newIngredient || !isValid) {
+            setError("Please enter a valid ingredient using only letters and spaces.");
+            return;
+        }
+        setError("");  // Clear error message
         setIngredients((prevIngredientsList) => [...prevIngredientsList, newIngredient]);
     }
 
@@ -45,6 +52,12 @@ export default function Main() {
                 action={addIngredients}
                 className="flex flex-col md:flex-row items-center justify-center gap-4 bg-white shadow-md rounded-lg p-4 md:p-6 max-w-2xl mx-auto mb-6"
             >
+                {error && (
+                    <p className="text-red-500 font-medium text-sm mb-1 -mt-2 text-center w-full">
+                        {error}
+                    </p>
+                )}
+
                 <input
 
                     type="text"
