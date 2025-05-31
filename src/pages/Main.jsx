@@ -4,11 +4,12 @@ import Recipe from "../components/Recipe";
 import Filters from "../components/Filters";
 
 import { getRecipeFromChefClaude } from "../utils/ai";
-export default function Main() {
-    const [ingredients, setIngredients] = React.useState([]);
-    const [recipe, setRecipe] = React.useState("");
+export default function Main() { 
+    //state management to update several user data and components
+    const [ingredients, setIngredients] = React.useState([]);  //add ingredients to array
+    const [recipe, setRecipe] = React.useState("");  //output of recipe from claude
     const [isLoading, setIsLoading] = React.useState(false);  // Add loading state
-    const [filters, setFilters] = React.useState({
+    const [filters, setFilters] = React.useState({  //applied filters
         vegan: false,
         vegetarian: false,
         glutenFree: false,
@@ -18,7 +19,7 @@ export default function Main() {
     });
     const [error, setError] = React.useState("");
 
-    const recipeSection = React.useRef(null);
+    const recipeSection = React.useRef(null);  //useRef doesnt cause a re render of the element when changed, unlike useEffect
     React.useEffect(() => {
         if (recipe !== "" && recipeSection.current !== null) {
             recipeSection.current.scrollIntoView({ behavior: "smooth" });
@@ -26,7 +27,7 @@ export default function Main() {
     }, [recipe]);
 
     async function getRecipe() {
-        setIsLoading(true);  // Start loading
+        setIsLoading(true);  // Start loading  //try finally block to get the output from the the api, loading for user to know
         try {
             const recipeMD = await getRecipeFromChefClaude(ingredients, filters);
             setRecipe(recipeMD);
@@ -36,7 +37,7 @@ export default function Main() {
     }
     function addIngredients(formData) {
         const newIngredient = formData.get("Ingredient");
-        const isValid = /^[A-Za-z\s]+$/.test(newIngredient);
+        const isValid = /^[A-Za-z\s]+$/.test(newIngredient);  //only takes input with alphabets and spaces
         if (!newIngredient || !isValid) {
             setError("Please enter a valid ingredient using only letters and spaces.");
             return;

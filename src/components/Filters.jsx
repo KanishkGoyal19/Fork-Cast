@@ -3,7 +3,7 @@ import React from "react";
 export default function Filters({ filters, setFilters }) {
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
-    setFilters((prev) => ({
+    setFilters((prev) => ({  //copies the previous state of the element and updates it
       ...prev,
       [name]: checked,
     }));
