@@ -3,8 +3,7 @@ import IngredientsList from "../components/IngredientsList";
 import Recipe from "../components/Recipe";
 import Filters from "../components/Filters";
 
-import { getRecipeFromChefClaude } from "../utils/ai";
-export default function Main() { 
+export default function Main() {
     //state management to update several user data and components
     const [ingredients, setIngredients] = React.useState([]);  //add ingredients to array
     const [recipe, setRecipe] = React.useState("");  //output of recipe from claude
@@ -27,14 +26,30 @@ export default function Main() {
     }, [recipe]);
 
     async function getRecipe() {
-        setIsLoading(true);  // Start loading  //try finally block to get the output from the the api, loading for user to know
+        setIsLoading(true);
         try {
-            const recipeMD = await getRecipeFromChefClaude(ingredients, filters);
-            setRecipe(recipeMD);
+            const res = await fetch("/api/generate-recipe", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ ingredients, filters }),
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                setRecipe(data.recipe);
+            } else {
+                setRecipe("Sorry, something went wrong.");
+            }
+        } catch (error) {
+            console.error("Error fetching recipe:", error);
+            setRecipe("Failed to generate recipe.");
         } finally {
-            setIsLoading(false);  // End loading
+            setIsLoading(false);
         }
     }
+
     function addIngredients(formData) {
         const newIngredient = formData.get("Ingredient");
         const isValid = /^[A-Za-z\s]+$/.test(newIngredient);  //only takes input with alphabets and spaces
