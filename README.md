@@ -1,5 +1,7 @@
 # ForkCast
 
+⚠️Currently down due to api key expiry, will be back as soon as possible.I apologise for any issues faced
+
 ForkCast is a modern, React-based web application that generates personalized recipes based on user-provided ingredients and dietary preferences. Built using Claude AI API and enhanced with custom backend logic, ForkCast enables users to generate, save, and revisit their favorite recipes easily. The app supports dietary filters and intelligent ingredient substitutions for a more inclusive and useful experience.
 
 ## **Table of Contents**
