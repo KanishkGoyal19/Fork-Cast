@@ -28,7 +28,7 @@ export default function Main() {
     async function getRecipe() {
         setIsLoading(true);
         try {
-            const res = await fetch("/api/generate-recipe", {
+            const res = await fetch("/api/generate-recipes", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
