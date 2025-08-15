@@ -9,15 +9,15 @@ const anthropic = new Anthropic({
 });
 
 export default async function handler(req, res) {
-  console.log("📥 Incoming request:", req.method, req.url); // step 1
+  console.log("Incoming request:", req.method, req.url); // step 1
 
   if (req.method !== 'POST') {
-    console.warn("❌ Invalid method:", req.method);
+    console.warn("Invalid method:", req.method);
     return res.status(405).json({ error: 'Only POST allowed' });
   }
 
   try {
-    console.log("📦 Request body:", req.body); // step 2
+    console.log(" Request body:", req.body); // step 2
 
     const { ingredients, filters } = req.body;
     const ingredientsString = ingredients.join(", ");
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     const filterNote = activeFilters ? `The user prefers a recipe that is: ${activeFilters}.` : "";
     const userPrompt = `I have ${ingredientsString}. ${filterNote} ${excluded} Please give me a recipe you'd recommend I make.`;
 
-    console.log("📝 Sending prompt to Claude:", userPrompt);
+    console.log("Sending prompt to Claude:", userPrompt);
 
     const msg = await anthropic.messages.create({
       model: "claude-3-5-sonnet-20241022",
@@ -45,15 +45,15 @@ export default async function handler(req, res) {
       ],
     });
 
-    console.log("✅ Claude API response received");
+    console.log("Claude API response received");
     res.status(200).json({ recipe: msg.content[0].text });
 
   } catch (err) {
-    console.error("🔥 Error in handler:", err);
+    console.error("Error in handler:", err);
 
     if (err.response) {
-      console.error("📄 Error response status:", err.response.status);
-      console.error("📄 Error response data:", await err.response.text?.());
+      console.error("Error response status:", err.response.status);
+      console.error("Error response data:", await err.response.text?.());
     }
 
     res.status(500).json({ error: 'Failed to generate recipe', details: err.message });
