@@ -16,12 +16,12 @@ export default function Main() {
         exclude: false,
         excludedIngredients: ""
     });
-    const [error, setError] = React.useState("");
+    const [error, setError] = React.useState("");  // error state for form validation
 
     const recipeSection = React.useRef(null);  //useRef doesnt cause a re render of the element when changed, unlike useEffect
     React.useEffect(() => {
         if (recipe !== "" && recipeSection.current !== null) {
-            recipeSection.current.scrollIntoView({ behavior: "smooth" });
+            recipeSection.current.scrollIntoView({ behavior: "smooth" });  //auto scroll to recipe when loaded 
         }
     }, [recipe]);
 
@@ -34,31 +34,31 @@ export default function Main() {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({ ingredients, filters }),
-            });
+            });  //POST req to API, sending ingredients and filters
 
             const data = await res.json();
             if (res.ok) {
                 setRecipe(data.recipe);
             } else {
                 setRecipe("Sorry, something went wrong.");
-            }
+            }  //catch errors for non-200 responses or no recipe
         } catch (error) {
             console.error("Error fetching recipe:", error);
             setRecipe("Failed to generate recipe.");
         } finally {
-            setIsLoading(false);
+            setIsLoading(false);  //reset loading state 
         }
     }
 
     function addIngredients(formData) {
         const newIngredient = formData.get("Ingredient");
-        const isValid = /^[A-Za-z\s]+$/.test(newIngredient);  //only takes input with alphabets and spaces
+        const isValid = /^[A-Za-z\s]+$/.test(newIngredient);  //only takes input with alphabets and spaces, regex method
         if (!newIngredient || !isValid) {
             setError("Please enter a valid ingredient using only letters and spaces.");
             return;
-        }
+        }  // validation check
         setError("");  // Clear error message
-        setIngredients((prevIngredientsList) => [...prevIngredientsList, newIngredient]);
+        setIngredients((prevIngredientsList) => [...prevIngredientsList, newIngredient]);  //update the ingredients list with the new ingredient
     }
 
     return (
@@ -89,17 +89,17 @@ export default function Main() {
                     + Add Ingredient
                 </button>
             </form>
-            <Filters filters={filters} setFilters={setFilters} />
+            <Filters filters={filters} setFilters={setFilters} />   {/* Filters component for ingredient preferences */}
             {ingredients.length > 0 ? (
                 <IngredientsList
-                    ref={recipeSection}
-                    ingredients={ingredients}
-                    getRecipe={getRecipe}
+                    ref={recipeSection}  // Reference to scroll into view
+                    ingredients={ingredients}  // List of ingredients
+                    getRecipe={getRecipe}  // Function to fetch recipe
                     isLoading={isLoading}  // Pass loading state
                 />
-            ) : null}
+            ) : null}  {/* If no ingredients, do not show IngredientsList. ternary function*/}
 
-            {recipe ? <Recipe recipe={recipe} /> : null}
+            {recipe ? <Recipe recipe={recipe} /> : null}  {/* If recipe exists, show Recipe component */}
         </main>
     );
 }

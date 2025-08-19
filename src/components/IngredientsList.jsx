@@ -1,4 +1,6 @@
+// IngredientsList component displays the list of ingredients and controls for generating a recipe
 export default function IngredientsList(props) {
+    // Map each ingredient to a list item for display
     const ingredientsListItems = props.ingredients.map((ingredient, index) => (
         <li key={index} className="text-lg font-medium text-gray-700">
             {ingredient}
@@ -16,7 +18,7 @@ export default function IngredientsList(props) {
                         <p className="text-gray-600">Generate a recipe from your list of ingredients.</p>
                         {props.isLoading && (
                             <div className="flex items-center justify-center mt-4">
-                                {/* Loading spinner */}
+                                {/* Loading spinner animation */}
                                 <svg
                                     className="animate-spin h-5 w-5 text-gray-600"
                                     xmlns="http://www.w3.org/2000/svg"
@@ -40,6 +42,7 @@ export default function IngredientsList(props) {
                                 <span className="ml-2 text-gray-700">Thinking...</span>
                             </div>
                         )}
+                        {/* Button to trigger recipe generation, disabled while loading */}
                         <button
                             onClick={props.getRecipe}
                             disabled={props.isLoading}
@@ -50,6 +53,7 @@ export default function IngredientsList(props) {
                     </div>
                 </>
             ) : (
+                // If not enough ingredients, prompt user to add more
                 <p className="text-gray-500 text-lg mt-4">
                     Need <span className="font-bold text-red-500">{4 - props.ingredients.length}</span> more ingredients.
                 </p>

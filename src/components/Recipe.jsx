@@ -2,13 +2,13 @@ import ReactMarkdown from 'react-markdown';
 import { useState } from 'react';
 
 export default function Recipe(props) {
-    const [copied, setCopied] = useState(false);
-    const [saved, setSaved] = useState(false);
+    const [copied, setCopied] = useState(false); // State to manage copy status
+    const [saved, setSaved] = useState(false); // State to manage save status
 
     const handleCopy = async () => {
         try {
-            await navigator.clipboard.writeText(props.recipe);
-            setCopied(true);
+            await navigator.clipboard.writeText(props.recipe);  // Copy recipe text to clipboard
+            setCopied(true);  // Set copied status to true
             setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
         } catch (err) {
             console.error("Failed to copy:", err);
