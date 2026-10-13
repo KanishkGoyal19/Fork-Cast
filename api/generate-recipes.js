@@ -1,61 +1,67 @@
 // api/generate-recipes.js
-import { Anthropic } from '@anthropic-ai/sdk';
+import Groq from 'groq-sdk';
 
-const SYSTEM_PROMPT = `You are Chef Claude, an expert culinary assistant. Your task is to create a recipe using the ingredients provided by the user. The recipe should primarily feature these ingredients and include clear instructions for preparation and cooking. Ensure the recipe is practical, easy to follow, and includes approximate measurements for each ingredient where applicable. If necessary, suggest additional common pantry items (e.g., salt, pepper, oil) to complete the recipe. Format your response in markdown.`;
-//system prompt for Claude
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-}); //anthropic variable and initializing with valid api key
+const SYSTEM_PROMPT = `You are an expert culinary assistant. Create a practical recipe using the ingredients provided by the user. The recipe should primarily feature these ingredients and include clear preparation and cooking instructions, approximate measurements, and common pantry items when needed. Format your response in markdown.`;
 
 export default async function handler(req, res) {
-  console.log("Incoming request:", req.method, req.url); // debugging console logs for requests
-
   if (req.method !== 'POST') {
-    console.warn("Invalid method:", req.method);
     return res.status(405).json({ error: 'Only POST allowed' });
-  }  // method check, only POST allowed
+  }
+
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    console.error('GROQ_API_KEY is not configured');
+    return res.status(500).json({ error: 'Recipe generation is not configured' });
+  }
 
   try {
-    console.log(" Request body:", req.body); // debugging console logs for requests
-
-    const { ingredients, filters } = req.body;  //destructuring ingredients and filters from request body
-    const ingredientsString = ingredients.join(", ");  //joining ingredients array into a string
-    const activeFilters = Object.entries(filters)  //for filter ingredients
-      .filter(([key, value]) => key !== "exclude" && key !== "excludedIngredients" && value)
-      .map(([key]) => key.replace(/([A-Z])/g, " $1").toLowerCase())  //formatting filter keys
-      .join(", ");
-    const excluded = filters.exclude && filters.excludedIngredients.trim() !== ""
-      ? `Please avoid using the following ingredients: ${filters.excludedIngredients}.`
-      : "";
-    const filterNote = activeFilters ? `The user prefers a recipe that is: ${activeFilters}.` : "";
-    const userPrompt = `I have ${ingredientsString}. ${filterNote} ${excluded} Please give me a recipe you'd recommend I make.`;  // final user prompt
-
-    console.log("Sending prompt to Claude:", userPrompt);  // debugging console logs for requests
-
-    const msg = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: userPrompt.trim(),
-        }
-      ],
-    });  // sending request to Claude API with user prompt, following documentation
-
-    console.log("Claude API response received");
-    res.status(200).json({ recipe: msg.content[0].text });  //debugging console logs with response body to validate request
-
-  } catch (err) {
-    console.error("Error in handler:", err);
-
-    if (err.response) {
-      console.error("Error response status:", err.response.status);
-      console.error("Error response data:", await err.response.text?.());
+    const { ingredients, filters = {} } = req.body ?? {};
+    if (
+      !Array.isArray(ingredients) ||
+      ingredients.length === 0 ||
+      !ingredients.every((ingredient) => typeof ingredient === 'string') ||
+      !filters ||
+      typeof filters !== 'object' ||
+      Array.isArray(filters)
+    ) {
+      return res.status(400).json({ error: 'Provide ingredients and recipe filters' });
     }
 
-    res.status(500).json({ error: 'Failed to generate recipe', details: err.message });
+    const ingredientsString = ingredients.join(', ');
+    const activeFilters = Object.entries(filters)
+      .filter(([key, value]) => key !== 'exclude' && key !== 'excludedIngredients' && value)
+      .map(([key]) => key.replace(/([A-Z])/g, ' $1').toLowerCase())
+      .join(', ');
+    const excludedIngredients =
+      filters.exclude && typeof filters.excludedIngredients === 'string'
+        ? filters.excludedIngredients.trim()
+        : '';
+    const filterNote = activeFilters
+      ? `The user prefers a recipe that is: ${activeFilters}.`
+      : '';
+    const excludedNote = excludedIngredients
+      ? `Please avoid using the following ingredients: ${excludedIngredients}.`
+      : '';
+    const userPrompt = `I have ${ingredientsString}. ${filterNote} ${excludedNote} Please give me a recipe you'd recommend I make.`;
+
+    const groq = new Groq({ apiKey });
+    const completion = await groq.chat.completions.create({
+      model: 'openai/gpt-oss-20b',
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userPrompt.trim() },
+      ],
+      max_tokens: 1024,
+    });
+    const recipe = completion.choices[0]?.message?.content?.trim();
+
+    if (!recipe) {
+      throw new Error('Groq returned an empty recipe');
+    }
+
+    return res.status(200).json({ recipe });
+  } catch (error) {
+    console.error('Error generating recipe with Groq:', error);
+    return res.status(500).json({ error: 'Failed to generate recipe' });
   }
 }

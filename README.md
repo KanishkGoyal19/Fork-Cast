@@ -1,6 +1,6 @@
 # ForkCast
 
-ForkCast is a modern, React-based web application that generates personalized recipes based on user-provided ingredients and dietary preferences. Built using Claude AI API and enhanced with custom backend logic, ForkCast enables users to generate, save, and revisit their favorite recipes easily. The app supports dietary filters and intelligent ingredient substitutions for a more inclusive and useful experience.
+ForkCast is a modern, React-based web application that generates personalized recipes based on user-provided ingredients and dietary preferences. Built using the Groq API and enhanced with custom backend logic, ForkCast enables users to generate, save, and revisit their favorite recipes easily. The app supports dietary filters and intelligent ingredient substitutions for a more inclusive and useful experience.
 
 ## **Table of Contents**
 
@@ -21,7 +21,7 @@ Check out the live demo of ForkCast:
 
 ## **Features**
 
-* Generate personalized recipes from user-provided ingredients using Claude AI.
+* Generate personalized recipes from user-provided ingredients using Groq.
 * Support for dietary preferences: vegan, vegetarian, gluten-free, dairy-free.
 * Specify excluded ingredients or preferred substitutes.
 * Save recipe history for future reference.
@@ -35,7 +35,7 @@ Check out the live demo of ForkCast:
 
 * **React** – Frontend UI framework
 * **Next.js** – Routing and SSR
-* **Claude AI API** – Natural language recipe generation
+* **Groq API** – Natural language recipe generation
 * **Node.js & Express** – Backend logic and history persistence
 * **MongoDB** – Recipe history and user data storage
 * **JavaScript, HTML, CSS** – Core development technologies
@@ -56,19 +56,21 @@ Check out the live demo of ForkCast:
    npm install
    ```
 
-3. Create a `.env.local` file in the root directory and add the following:
+3. Create a Groq API key in the [Groq Console](https://console.groq.com/keys). Create a `.env.local` file in the project root and add:
 
    ```env
-   VITE_ANTHROPIC_API_KEY=your_claude_api_key
+   GROQ_API_KEY=your_groq_api_key
    ```
 
-4. Run the development server:
+   Keep this key server-side; do not prefix it with `VITE_` or commit it. For deployment, set `GROQ_API_KEY` in your Vercel project environment variables.
+
+4. Run the development server with Vercel so the `/api/generate-recipes` function is available:
 
    ```bash
-   npm run dev
+   npx vercel dev
    ```
 
-5. Open your browser and navigate to `http://localhost:3000`.
+5. Open the local URL shown in the terminal.
 
 ---
 
