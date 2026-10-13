@@ -1,61 +1,65 @@
-// api/generate-recipes.js
-import { Anthropic } from '@anthropic-ai/sdk';
+import { GoogleGenAI } from "@google/genai";
 
-const SYSTEM_PROMPT = `You are Chef Claude, an expert culinary assistant. Your task is to create a recipe using the ingredients provided by the user. The recipe should primarily feature these ingredients and include clear instructions for preparation and cooking. Ensure the recipe is practical, easy to follow, and includes approximate measurements for each ingredient where applicable. If necessary, suggest additional common pantry items (e.g., salt, pepper, oil) to complete the recipe. Format your response in markdown.`;
-//system prompt for Claude
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-}); //anthropic variable and initializing with valid api key
+const SYSTEM_PROMPT = `You are an expert culinary assistant. Create a practical recipe using the ingredients provided by the user. Include clear preparation and cooking instructions, approximate measurements, and common pantry items when needed. Format your response in markdown.`;
 
 export default async function handler(req, res) {
-  console.log("Incoming request:", req.method, req.url); // debugging console logs for requests
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Only POST allowed" });
+  }
 
-  if (req.method !== 'POST') {
-    console.warn("Invalid method:", req.method);
-    return res.status(405).json({ error: 'Only POST allowed' });
-  }  // method check, only POST allowed
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.error("GEMINI_API_KEY is not configured");
+    return res.status(500).json({ error: "Recipe generation is not configured" });
+  }
+
+  const { ingredients, filters = {} } = req.body ?? {};
+  if (
+    !Array.isArray(ingredients) ||
+    ingredients.length === 0 ||
+    !ingredients.every((ingredient) => typeof ingredient === "string") ||
+    !filters ||
+    typeof filters !== "object" ||
+    Array.isArray(filters)
+  ) {
+    return res.status(400).json({ error: "Provide ingredients and recipe filters" });
+  }
+
+  const ingredientsString = ingredients.join(", ");
+  const activeFilters = Object.entries(filters)
+    .filter(([key, value]) => key !== "exclude" && key !== "excludedIngredients" && value)
+    .map(([key]) => key.replace(/([A-Z])/g, " $1").toLowerCase())
+    .join(", ");
+  const excludedIngredients =
+    filters.exclude && typeof filters.excludedIngredients === "string"
+      ? filters.excludedIngredients.trim()
+      : "";
+  const filterNote = activeFilters
+    ? `The user prefers a recipe that is: ${activeFilters}.`
+    : "";
+  const excludedNote = excludedIngredients
+    ? `Please avoid using the following ingredients: ${excludedIngredients}.`
+    : "";
+  const userPrompt = `I have ${ingredientsString}. ${filterNote} ${excludedNote} Please give me a recipe you'd recommend I make.`;
 
   try {
-    console.log(" Request body:", req.body); // debugging console logs for requests
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: userPrompt,
+      config: {
+        systemInstruction: SYSTEM_PROMPT,
+        maxOutputTokens: 1024,
+      },
+    });
 
-    const { ingredients, filters } = req.body;  //destructuring ingredients and filters from request body
-    const ingredientsString = ingredients.join(", ");  //joining ingredients array into a string
-    const activeFilters = Object.entries(filters)  //for filter ingredients
-      .filter(([key, value]) => key !== "exclude" && key !== "excludedIngredients" && value)
-      .map(([key]) => key.replace(/([A-Z])/g, " $1").toLowerCase())  //formatting filter keys
-      .join(", ");
-    const excluded = filters.exclude && filters.excludedIngredients.trim() !== ""
-      ? `Please avoid using the following ingredients: ${filters.excludedIngredients}.`
-      : "";
-    const filterNote = activeFilters ? `The user prefers a recipe that is: ${activeFilters}.` : "";
-    const userPrompt = `I have ${ingredientsString}. ${filterNote} ${excluded} Please give me a recipe you'd recommend I make.`;  // final user prompt
-
-    console.log("Sending prompt to Claude:", userPrompt);  // debugging console logs for requests
-
-    const msg = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: userPrompt.trim(),
-        }
-      ],
-    });  // sending request to Claude API with user prompt, following documentation
-
-    console.log("Claude API response received");
-    res.status(200).json({ recipe: msg.content[0].text });  //debugging console logs with response body to validate request
-
-  } catch (err) {
-    console.error("Error in handler:", err);
-
-    if (err.response) {
-      console.error("Error response status:", err.response.status);
-      console.error("Error response data:", await err.response.text?.());
+    if (!response.text) {
+      throw new Error("Gemini returned an empty recipe");
     }
 
-    res.status(500).json({ error: 'Failed to generate recipe', details: err.message });
+    return res.status(200).json({ recipe: response.text });
+  } catch (error) {
+    console.error("Error generating recipe with Gemini:", error);
+    return res.status(500).json({ error: "Failed to generate recipe" });
   }
 }
