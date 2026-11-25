@@ -1,86 +1,213 @@
 # ForkCast
 
-ForkCast is a modern, React-based web application that generates personalized recipes based on user-provided ingredients and dietary preferences. Built using the Groq API and enhanced with custom backend logic, ForkCast enables users to generate, save, and revisit their favorite recipes easily. The app supports dietary filters and intelligent ingredient substitutions for a more inclusive and useful experience.
+ForkCast is a responsive recipe-generation web application that creates personalized recipes from ingredients the user has available. Users can choose dietary preferences or exclude specific ingredients, then generate a Markdown-formatted recipe through Groq.
 
-## **Table of Contents**
+**Live application:** [fork-cast-orcin.vercel.app](https://fork-cast-orcin.vercel.app/)
 
-* [Demo](#demo)
-* [Features](#features)
-* [Technologies Used](#technologies-used)
-* [Installation](#installation)
-* [Usage](#usage)
+## Features
 
----
+- Add ingredients using an alphabet-and-whitespace-only input.
+- Generate recipes after adding at least four ingredients.
+- Filter recipes using vegan, vegetarian, gluten-free, and dairy-free preferences.
+- Exclude one or more specified ingredients.
+- Render generated recipes as formatted Markdown.
+- Copy generated recipes to the clipboard.
+- Display a temporary loading state and disable repeated submissions.
+- Save-button UI for selecting or deselecting a recipe.
 
-## **Demo**
+> The current Save button is a local UI state only. Recipe persistence and recipe history are not implemented.
 
-Check out the live demo of ForkCast:
-[ForkCast on Vercel](https://fork-cast-orcin.vercel.app/)
+## Architecture
 
----
+```text
+React frontend
+    |
+    | POST /api/generate-recipes
+    v
+Vercel serverless API function
+    |
+    | Groq chat-completions request
+    v
+Groq openai/gpt-oss-20b model
+```
 
-## **Features**
+- **React 19** builds the component-based frontend.
+- **Vite 6** provides development and production frontend tooling.
+- **Tailwind CSS 4** provides utility-first styling.
+- **Groq SDK** communicates with Groq from the server-side API.
+- **React Markdown** renders generated recipe text.
+- **Remark GFM** adds GitHub-Flavored Markdown support.
+- **Vercel** hosts the frontend and serverless API function.
 
-* Generate personalized recipes from user-provided ingredients using Groq.
-* Support for dietary preferences: vegan, vegetarian, gluten-free, dairy-free.
-* Specify excluded ingredients or preferred substitutes.
-* Save recipe history for future reference.
-* Copy and reuse recipes with one click.
-* Responsive and intuitive user interface.
-* Deployed on Vercel for fast and scalable performance.
+The Groq API key is kept server-side through `GROQ_API_KEY`. It is never included in frontend code or a `VITE_` environment variable.
 
----
+## Project Structure
 
-## **Technologies Used**
+```text
+api/
+  generate-recipes.js       Serverless Groq API handler
+public/
+  background.jpg            Page background
+  images.png                ForkCast logo
+src/
+  components/
+    Filters.jsx             Dietary and exclusion controls
+    HeroSection.jsx         Logo and introduction
+    IngredientsList.jsx     Ingredient list and generate button
+    Recipe.jsx              Markdown result and copy/save controls
+  pages/
+    App.jsx                 Page composition and background
+    Main.jsx                Application state and request logic
+  index.css                 Tailwind CSS entry point
+index.jsx                   React DOM entry point
+vite.config.js              Vite configuration
+tailwind.config.js          Tailwind content and plugin configuration
+postcss.config.js           PostCSS configuration
+```
 
-* **React** – Frontend UI framework
-* **Next.js** – Routing and SSR
-* **Groq API** – Natural language recipe generation
-* **Node.js & Express** – Backend logic and history persistence
-* **MongoDB** – Recipe history and user data storage
-* **JavaScript, HTML, CSS** – Core development technologies
+`Header.jsx` exists but is not currently rendered in `App.jsx`.
 
----
+## How It Works
 
-## **Installation**
+1. `index.jsx` creates a React root and renders `App`.
+2. `Main.jsx` stores ingredients, dietary filters, recipe text, loading state, and validation errors.
+3. The user enters an ingredient and submits the form.
+4. The frontend validates the text with a regular expression and appends valid ingredients to state.
+5. After four ingredients are added, `IngredientsList.jsx` displays the Generate Recipe button.
+6. The frontend sends a `POST` request containing ingredients and filters to `/api/generate-recipes`.
+7. `api/generate-recipes.js` validates the request and constructs a system prompt and user prompt.
+8. The server sends the prompt to Groq using the `openai/gpt-oss-20b` model.
+9. Groq returns recipe text in Markdown.
+10. The frontend stores the text in state and renders it with `ReactMarkdown`.
+11. The user can copy the result or toggle the visual Save control.
 
-1. Clone the repository:
+## Environment Setup
 
-   ```bash
-   git clone https://github.com/KanishkGoyal19/Fork-Cast.git
-   ```
+### Prerequisites
 
-2. Install dependencies:
+- Node.js
+- npm
+- A Groq API key
+- Optional for full local API testing: Vercel CLI
 
-   ```bash
-   npm install
-   ```
+### Installation
 
-3. Create a Groq API key in the [Groq Console](https://console.groq.com/keys). Create a `.env.local` file in the project root and add:
+```bash
+git clone https://github.com/KanishkGoyal19/Fork-Cast.git
+cd Fork-Cast
+npm install
+```
 
-   ```env
-   GROQ_API_KEY=your_groq_api_key
-   ```
+Create `.env.local` in the project root:
 
-   Keep this key server-side; do not prefix it with `VITE_` or commit it. For deployment, set `GROQ_API_KEY` in your Vercel project environment variables.
+```env
+GROQ_API_KEY=your_groq_api_key
+```
 
-4. Run the development server with Vercel so the `/api/generate-recipes` function is available:
+Do not commit this file or expose the key to browser code.
 
-   ```bash
-   npx vercel dev
-   ```
+### Run Locally
 
-5. Open the local URL shown in the terminal.
+Vite alone starts the frontend:
 
----
+```bash
+npm run dev
+```
 
-## **Usage**
+To run the frontend and `/api/generate-recipes` serverless function together:
 
-1. Enter ingredients in the input field.
-2. Select dietary preferences or exclusions.
-3. Click "Generate Recipe" to create a custom meal.
-4. Save or copy your recipe from the history tab for later use.
+```bash
+npx vercel dev
+```
 
----
+Open the local URL printed by Vercel.
 
----
+For a production frontend build:
+
+```bash
+npm run build
+```
+
+To preview the build locally:
+
+```bash
+npm run preview
+```
+
+## Vercel Deployment
+
+Set `GROQ_API_KEY` as an environment variable in the Vercel project settings, then deploy. Vercel will:
+
+- Build the Vite frontend
+- Serve the static assets
+- Expose `api/generate-recipes.js` as `/api/generate-recipes`
+
+## API Reference
+
+### `POST /api/generate-recipes`
+
+Request body:
+
+```json
+{
+  "ingredients": ["chicken", "rice", "broccoli", "pepper"],
+  "filters": {
+    "vegan": false,
+    "vegetarian": false,
+    "glutenFree": true,
+    "dairyFree": false,
+    "exclude": true,
+    "excludedIngredients": "mushrooms"
+  }
+}
+```
+
+Success response:
+
+```json
+{
+  "recipe": "# Recipe title\n\n..."
+}
+```
+
+Response statuses:
+
+- `200`: Recipe generated successfully.
+- `400`: Ingredients or filters are invalid.
+- `405`: HTTP method is not `POST`.
+- `500`: Groq API key is missing or recipe generation fails.
+
+## Usage
+
+1. Enter an ingredient and select **+ Add Ingredient**.
+2. Repeat until at least four ingredients are listed.
+3. Optionally select dietary preferences.
+4. Optionally enable exclusions and enter excluded ingredients.
+5. Select **Get a Recipe**.
+6. Wait for Groq to generate the Markdown recipe.
+7. Use **Copy Recipe** to copy the result.
+
+## Current Limitations
+
+The current implementation does not include persistence or a database. In particular:
+
+- The Save button only toggles local component state.
+- Recipes do not survive a page refresh.
+- No recipe history or user accounts exist.
+- The API does not currently enforce the frontend's four-ingredient minimum.
+- Duplicate ingredients are allowed.
+- Automated tests are not included.
+
+## Technologies
+
+- React 19
+- Vite 6
+- JavaScript and JSX
+- Tailwind CSS 4
+- PostCSS and Autoprefixer
+- Groq SDK
+- React Markdown
+- Remark GFM
+- Rehype Raw
+- Vercel serverless functions
+- Vercel Analytics
